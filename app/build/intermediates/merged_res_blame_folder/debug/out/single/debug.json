@@ -1,14 +1,14 @@
 [
     {
-        "merged": "com.custom.timelinelog.app-merged_res-45:/font_montserrat_medium.ttf.flat",
-        "source": "com.custom.timelinelog.app-main-47:/font/montserrat_medium.ttf"
+        "merged": "com.custom.timelinelog.app-merged_res-46:/font_montserrat_bold.ttf.flat",
+        "source": "com.custom.timelinelog.app-main-48:/font/montserrat_bold.ttf"
     },
     {
-        "merged": "com.custom.timelinelog.app-merged_res-45:/font_montserrat_bold.ttf.flat",
-        "source": "com.custom.timelinelog.app-main-47:/font/montserrat_bold.ttf"
+        "merged": "com.custom.timelinelog.app-merged_res-46:/font_montserrat_medium.ttf.flat",
+        "source": "com.custom.timelinelog.app-main-48:/font/montserrat_medium.ttf"
     },
     {
-        "merged": "com.custom.timelinelog.app-merged_res-45:/font_montserrat_regular.ttf.flat",
-        "source": "com.custom.timelinelog.app-main-47:/font/montserrat_regular.ttf"
+        "merged": "com.custom.timelinelog.app-merged_res-46:/font_montserrat_regular.ttf.flat",
+        "source": "com.custom.timelinelog.app-main-48:/font/montserrat_regular.ttf"
     }
 ]

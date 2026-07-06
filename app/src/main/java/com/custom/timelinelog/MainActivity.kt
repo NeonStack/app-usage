@@ -15,6 +15,7 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -101,9 +102,9 @@ val AppTypography = Typography(
     displayLarge = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.Normal, fontSize = 57.sp, lineHeight = 64.sp),
     displayMedium = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.Normal, fontSize = 45.sp, lineHeight = 52.sp),
     displaySmall = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.Normal, fontSize = 36.sp, lineHeight = 44.sp),
-    headlineLarge = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 32.sp, lineHeight = 40.sp),
-    headlineMedium = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 28.sp, lineHeight = 36.sp),
-    headlineSmall = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, lineHeight = 32.sp),
+    headlineLarge = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.Bold, fontSize = 32.sp, lineHeight = 40.sp),
+    headlineMedium = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 36.sp),
+    headlineSmall = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 32.sp),
     titleLarge = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 28.sp),
     titleMedium = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 24.sp),
     titleSmall = TextStyle(fontFamily = MontserratFontFamily, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp),
@@ -199,11 +200,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+        // Must be called before setContent to avoid insets crash on API 29+
+        enableEdgeToEdge()
+
         setContent {
             TimelineTheme {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -232,9 +235,10 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         is UiState.Success -> {
+                            // Fix: use this@MainActivity to correctly reference the Activity
                             TimelineDashboard(
                                 items = state.items,
-                                onRefresh = { viewModel.loadData(this) }
+                                onRefresh = { viewModel.loadData(this@MainActivity) }
                             )
                         }
                         is UiState.Error -> {
@@ -276,7 +280,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        viewModel.loadData(this)
+        // Only reload if not already showing data, to avoid spamming re-queries
+        // when the user navigates back from within the app itself.
+        val current = viewModel.uiState.value
+        if (current !is UiState.Success) {
+            viewModel.loadData(this)
+        } else {
+            // Always re-check permission in case user revoked it in settings
+            viewModel.loadData(this)
+        }
     }
 }
 
@@ -454,17 +466,24 @@ private fun fetchTimelineData(context: Context): List<ProcessedTimelineItem> {
     return timelineItems
 }
 
-// Convert drawable to Bitmap safely, supporting adaptive vectors and raster assets
+// Convert drawable to Bitmap safely, handling adaptive icons, vectors, and recycled BitmapDrawables
 private fun drawableToBitmap(drawable: Drawable): Bitmap {
-    if (drawable is BitmapDrawable && drawable.bitmap != null) {
-        return drawable.bitmap
+    // Guard: BitmapDrawable.bitmap can be null if the bitmap was recycled
+    if (drawable is BitmapDrawable) {
+        val bmp = drawable.bitmap
+        if (bmp != null && !bmp.isRecycled) return bmp
     }
-    val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 96
-    val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 96
+    val width = drawable.intrinsicWidth.takeIf { it > 0 } ?: 96
+    val height = drawable.intrinsicHeight.takeIf { it > 0 } ?: 96
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     drawable.setBounds(0, 0, canvas.width, canvas.height)
-    drawable.draw(canvas)
+    try {
+        drawable.draw(canvas)
+    } catch (e: Exception) {
+        // Swallow any draw exception; the bitmap will remain blank and the
+        // letter-fallback in the UI will render instead.
+    }
     return bitmap
 }
 
@@ -794,7 +813,7 @@ fun SessionItemRow(session: ProcessedTimelineItem.Session) {
                     Text(
                         text = formatDuration(session.durationMs),
                         color = Emerald500,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
                     )
                 }

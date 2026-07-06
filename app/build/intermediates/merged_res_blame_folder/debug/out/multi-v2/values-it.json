@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.custom.timelinelog.app-mergeDebugResources-43:/values-it/values-it.xml",
+            "outputFile": "com.custom.timelinelog.app-mergeDebugResources-44:/values-it/values-it.xml",
             "map": [
                 {
                     "source": "/home/john/.gradle/caches/transforms-3/0f6440e36f3e5af46a8b32a0c0fa296b/transformed/jetified-material3-release/res/values-it/values-it.xml",
